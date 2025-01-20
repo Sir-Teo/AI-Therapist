@@ -1,4 +1,4 @@
-# pirate_chatbot_langchain.py
+# therapist_chatbot_langchain.py
 from dotenv import load_dotenv
 import os
 import transformers
@@ -104,12 +104,12 @@ try:
 
     # Define the prompt template
     prompt_template = PromptTemplate(
-        template="{history}\nUser: {input}\nPirateBot:",
+        template="{history}\nUser: {input}\nTherapistBot:",
         input_variables=["history", "input"]
     )
     logger.info("Prompt template defined.")
 
-    # Create the LLMChain (deprecated; consider updating to RunnableSequence)
+    # Create the LLMChain
     llm_chain = LLMChain(
         llm=llm,
         prompt=prompt_template,
@@ -134,8 +134,13 @@ except Exception as e:
 # ================================
 # 7. Define System and User Prompts
 # ================================
-system_prompt = "You are a pirate chatbot who always responds in pirate speak!"
-initial_user_prompt = "Who are you?"
+# System prompt to establish the role and style of the chatbot
+system_prompt = (
+    "You are a therapist chatbot who responds with empathy, understanding, and professional support. "
+    "You do not provide medical diagnoses or specific medical advice. Instead, you offer general coping strategies, "
+    "emotional support, and encourage the user to seek professional help if needed."
+)
+initial_user_prompt = "I'm feeling a bit anxious today."
 
 # ================================
 # 8. Generate and Print Responses
@@ -151,7 +156,7 @@ def generate_single_turn_response():
             "history": "",
             "input": initial_user_prompt
         })
-        print("PirateBot:", response["text"])
+        print("TherapistBot:", response["text"])
     except Exception as e:
         logger.error(f"Error generating single-turn response: {e}")
 
@@ -165,56 +170,54 @@ def generate_multi_turn_response():
         # 1st turn
         response1 = conversation_chain.run(initial_user_prompt)
         print("User: " + initial_user_prompt)
-        print("PirateBot:", response1)
+        print("TherapistBot:", response1)
 
         # 2nd turn
-        user_prompt2 = "Tell me a pirate joke."
+        user_prompt2 = "I have trouble sleeping at night due to racing thoughts."
         response2 = conversation_chain.run(user_prompt2)
         print("User: " + user_prompt2)
-        print("PirateBot:", response2)
+        print("TherapistBot:", response2)
 
         # 3rd turn
-        user_prompt3 = "That was great! What's the weather like today?"
+        user_prompt3 = "Thank you. Can you suggest any relaxation techniques?"
         response3 = conversation_chain.run(user_prompt3)
         print("User: " + user_prompt3)
-        print("PirateBot:", response3)
+        print("TherapistBot:", response3)
 
     except Exception as e:
         logger.error(f"Error generating multi-turn response: {e}")
 
 def interactive_chat():
     """
-    Allows the user to converse interactively with PirateBot until they type 'exit' or 'quit'.
+    Allows the user to converse interactively with TherapistBot until they type 'exit' or 'quit'.
     """
-    logger.info("Starting interactive chat with PirateBot. Type 'exit' or 'quit' to stop.")
-    print("Ahoy, matey! Ye be chattin' with PirateBot. Type 'exit' or 'quit' to leave our ship!\n")
+    logger.info("Starting interactive chat with TherapistBot. Type 'exit' or 'quit' to stop.")
+    print("Hello, I'm TherapistBot. I'm here to offer support. Type 'exit' or 'quit' at any time to end our session.\n")
 
     while True:
         user_input = input("User: ")
         
         if user_input.strip().lower() in ["exit", "quit"]:
-            print("PirateBot: Arrr, take care on the high seas, me hearty!")
+            print("TherapistBot: Thank you for sharing. Remember, professional help is always there if you need it. Take care.")
             break
         
         try:
             response = conversation_chain.run(user_input)
-            print("PirateBot:", response, "\n")
+            print("TherapistBot:", response, "\n")
         except Exception as e:
             logger.error(f"Error generating interactive response: {e}")
-            print("PirateBot: Arrr, there be a squall in me code! Try again.\n")
-
+            print("TherapistBot: I'm sorry, I'm having trouble understanding. Please try again.\n")
 
 # ================================
 # 9. Main Execution
 # ================================
 if __name__ == "__main__":
     # Generate a single-turn response
-    generate_single_turn_response()
+    # generate_single_turn_response()
 
-    #print("\n--- Starting Multi-Turn Conversation ---\n")
-
+    # print("\n--- Starting Multi-Turn Conversation ---\n")
     # Generate multi-turn responses
-    #generate_multi_turn_response()
+    # generate_multi_turn_response()
 
+    # Start interactive chat
     interactive_chat()
-

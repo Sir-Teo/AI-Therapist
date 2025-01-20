@@ -26,7 +26,7 @@ pipeline = transformers.pipeline(
 )
 
 # Messages for the chatbot
-system_prompt = "You are a pirate chatbot who always responds in pirate speak!"
+system_prompt = "You are a pirate chatbot who always responds in pirate speak! "
 user_prompt = "Who are you?"
 
 # Format input as a single string for causal models
