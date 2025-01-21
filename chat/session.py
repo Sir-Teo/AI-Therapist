@@ -6,71 +6,67 @@ class ChatSession:
         self.stopping_criteria = stopping_criteria
         self.settings = settings
         self.turn_count = 0
-        self.STOP_PHRASES = ["thank you", "thanks", "goodbye", "bye"]
-        self.MAX_RESPONSE_LENGTH = 150  # Confirmed max length of 150 characters
-
-    def _should_end_session(self, user_input):
-        if user_input.strip().lower() in ["exit", "quit"]:
-            return True
-        if any(phrase in user_input.lower() for phrase in self.STOP_PHRASES):
-            return True
-        if self.turn_count >= self.settings.MAX_TURNS:
-            return True
-        return False
+        self.exit_phrases = {
+            "exit",
+        }
+        self.max_response_length = 150
 
     def process_user_input(self, user_input):
+        """Process user input and generate appropriate response."""
+        logger.info(f"User Input: {user_input}")
+        
         if self._should_end_session(user_input):
+            logger.info("Session ending")
             return None, True
 
         try:
-            # Get response from conversation chain
-            response = self.conversation_chain.predict(input=user_input)
+            # Log the input that will be passed to the model
+            logger.info(f"Model Input (Turn {self.turn_count + 1}): {user_input}")
             
-            # Clean and limit response
-            response = self._clean_response(response)
-            response = self._limit_response_length(response)
+            # Generate the response and log the raw (unfiltered) output
+            response = self._generate_response(user_input)
             
-            if self.stopping_criteria.should_stop_generation(response):
-                return (
-                    "Would you like to explore a different topic? I'm here to listen.",
-                    False
-                )
-                
             self.turn_count += 1
             return response, False
 
         except Exception as e:
-            logger.error(f"Error generating response: {e}")
-            return "I'm sorry, I'm having trouble. Could you try rephrasing that?", False
-            
-    def _clean_response(self, response):
-        """Remove unwanted prefixes and formatting."""
-        # Remove common prefixes and system instructions
-        response = response.replace("TherapistBot:", "")
-        response = response.replace("Assistant:", "")
-        response = response.replace("Human:", "")
+            logger.error(f"Response generation error: {str(e)}")
+            return "I apologize, but could you rephrase that?", False
+
+    def _should_end_session(self, user_input):
+        """Check if the session should end based on input or turn count."""
+        user_input = user_input.lower().strip()
+        return (
+            user_input in self.exit_phrases or
+            self.turn_count >= self.settings.MAX_TURNS
+        )
+
+    def _generate_response(self, user_input):
+        """Generate and process the model's response."""
+        # Generate the raw response from the model
+        raw_response = self.conversation_chain.predict(input=user_input)
         
-        # Remove any template instructions
-        if "providing emotional support" in response:
-            response = response.split("providing emotional support")[1]
-            
-        if "Current conversation:" in response:
-            response = response.split("Current conversation:")[1]
-            
-        # Remove any generation settings
-        if "Setting `pad_token_id`" in response:
-            response = response.split("Setting `pad_token_id`")[0]
-            
-        return response.strip()
+        # Log the raw (unfiltered) output of the model
+        logger.info(f"Model Output (Turn {self.turn_count + 1}): {raw_response}")
         
-    def _limit_response_length(self, response):
-        """Limit response length and ensure it ends properly."""
-        if len(response) <= self.MAX_RESPONSE_LENGTH:
+        if self.stopping_criteria.should_stop_generation(raw_response):
+            return "Would you like to explore a different topic?"
+            
+        return self._format_response(raw_response)
+
+    def _format_response(self, response):
+        """Format and limit the length of the response."""
+        # Remove any system prefixes
+        response = response.replace("Response:", "").strip()
+        
+        if len(response) <= self.max_response_length:
             return response
             
-        # Try to cut at the last complete sentence
-        shortened = response[:self.MAX_RESPONSE_LENGTH]
+        # Truncate at last complete sentence
+        shortened = response[:self.max_response_length]
         last_period = shortened.rfind('.')
+        
         if last_period > 0:
-            shortened = shortened[:last_period + 1]
+            return shortened[:last_period + 1].strip()
+        
         return shortened.strip()
