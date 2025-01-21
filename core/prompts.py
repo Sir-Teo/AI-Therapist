@@ -1,46 +1,38 @@
 # core/prompts.py
 from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain, ConversationChain
+from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferWindowMemory
 
 class PromptManager:
-    SYSTEM_PROMPT = """
-    You are a therapist chatbot who responds with empathy, understanding, and professional support.
-    You do not provide medical diagnoses or specific medical advice. Instead, you offer general coping
-    strategies, emotional support, and encourage the user to seek professional help if needed.
-    """
+    @staticmethod
+    def setup_chains(llm):
+        # Define a cleaner prompt template that doesn't repeat the context
+        prompt_template = """You are an empathetic AI therapist providing emotional support and coping strategies. Remember to:
+- Listen actively and validate feelings
+- Ask thoughtful questions to understand better
+- Offer practical coping strategies when appropriate
+- Encourage professional help if needed
+- Never diagnose or give medical advice
 
-    @classmethod
-    def create_prompt_template(cls):
-        return PromptTemplate(
-            template="""
-            {history}
-            User: {input}
-            TherapistBot:
-            """.strip(),
-            input_variables=["history", "input"]
+Current conversation:
+{history}
+Human: {input}
+Assistant: """
+
+        prompt = PromptTemplate(
+            input_variables=["history", "input"], 
+            template=prompt_template
         )
 
-    @classmethod
-    def setup_chains(cls, llm):
-        prompt_template = cls.create_prompt_template()
-        
-        # Single-turn chain
-        llm_chain = LLMChain(
-            llm=llm,
-            prompt=prompt_template,
-            verbose=True
-        )
-
-        # Multi-turn chain with memory
+        # Setup memory with a window of recent messages
         memory = ConversationBufferWindowMemory(k=5)
-        memory.chat_memory.add_ai_message(cls.SYSTEM_PROMPT)
 
+        # Create conversation chain
         conversation_chain = ConversationChain(
             llm=llm,
-            prompt=prompt_template,
             memory=memory,
-            verbose=True
+            prompt=prompt,
+            verbose=False  # Set to False to avoid printing debug info
         )
 
-        return llm_chain, conversation_chain
+        return prompt, conversation_chain

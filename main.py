@@ -37,22 +37,23 @@ def main():
     try:
         chat_session = initialize_chatbot()
         
-        print("Hello, I'm TherapistBot. I'm here to offer support. Type 'exit' or 'quit' at any time to end our session.\n")
+        print("\nHello! I'm here to listen and support you. Feel free to share what's on your mind.")
+        print("(Type 'exit' or 'quit' to end our session)\n")
         
         while True:
-            user_input = input("User: ")
+            user_input = input("You: ")
             response, should_end = chat_session.process_user_input(user_input)
             
             if should_end:
-                print("TherapistBot: Thank you for sharing. Take care!")
+                print("\nTake care! Remember, support is always available when you need it.")
                 break
                 
             if response:
-                print("TherapistBot:", response)
+                print(f"\nTherapistBot: {response}\n")
                 
     except Exception as e:
         logger.error(f"Error in main: {e}")
-        print("An error occurred. Please try again later.")
+        print("I apologize, but I'm having trouble responding right now. Please try again later.")
 
 if __name__ == "__main__":
     main()
