@@ -1,58 +1,35 @@
 # core/prompts.py
-from langchain.prompts import PromptTemplate
-from langchain.chains import ConversationChain
+
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferWindowMemory
 
 class PromptManager:
     @staticmethod
     def setup_chains(llm, use_memory=True):
-        # Prompt template when memory is enabled
-        prompt_with_memory = """As an empathetic AI therapist, provide a single thoughtful response that:
-- Validates the person's feelings
-- Offers relevant emotional support or coping strategies when appropriate
-- Maintains professional boundaries while being warm and understanding
+        system_instructions = (
+    "You are an empathetic therapist. You must respond to \"Human\" in exactly one single sentence, "
+    "and continue the conversation. Prepend each response with \"Therapist: \".\n"
+    "---\n"
+    "Example:\n"
+    "Human: I feel overwhelmed with work and life.\n"
+    "Therapist: It sounds like you're juggling a lot—remember to take small steps to care for yourself.\n"
+    "---"
+)
 
-Previous conversation:
-{history}
-
-Person: {input}
-Response:"""
-
-        # Prompt template when memory is disabled
-        prompt_without_memory = """As an empathetic AI therapist, provide a single thoughtful response that:
-- Validates the person's feelings
-- Offers relevant emotional support or coping strategies when appropriate
-- Maintains professional boundaries while being warm and understanding
-
-Person: {input}
-Response:"""
-
-        # Choose the appropriate prompt based on the use_memory flag
         if use_memory:
-            prompt = PromptTemplate(
-                input_variables=["history", "input"],
-                template=prompt_with_memory
-            )
-            # Maintain recent context while avoiding excessive history
-            memory = ConversationBufferWindowMemory(
-                k=3,
-                memory_key="history",
-                human_prefix="Person",
-                ai_prefix="Response"
-            )
+            memory = ConversationBufferWindowMemory(k=3, return_messages=True)
+            chat_prompt = ChatPromptTemplate.from_messages([
+                ("system", system_instructions),
+                MessagesPlaceholder(variable_name="history"),
+                ("human", "{input}\n")
+            ])
         else:
-            prompt = PromptTemplate(
-                input_variables=["input"],
-                template=prompt_without_memory
-            )
-            # Disable memory by setting it to None
             memory = None
+            chat_prompt = ChatPromptTemplate.from_messages([
+            ("system", system_instructions),
+            ("human", "{input}\n")
+            ])
 
-        conversation_chain = ConversationChain(
-            llm=llm,
-            memory=memory,
-            prompt=prompt,
-            verbose=False
-        )
-
-        return prompt, conversation_chain
+        chain = LLMChain(llm=llm, prompt=chat_prompt, memory=memory, verbose=False)
+        return chain
