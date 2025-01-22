@@ -1,3 +1,4 @@
+# chat/session.py
 from utils.logger import logger
 
 class ChatSession:
@@ -43,8 +44,14 @@ class ChatSession:
 
     def _generate_response(self, user_input):
         """Generate and process the model's response."""
+        # Check if memory is enabled by inspecting the ConversationChain's prompt variables
+        if "history" in self.conversation_chain.prompt.input_variables:
+            model_input = {"history": self.conversation_chain.memory.load_memory_variables({})["history"], "input": user_input}
+        else:
+            model_input = {"input": user_input}
+        
         # Generate the raw response from the model
-        raw_response = self.conversation_chain.predict(input=user_input)
+        raw_response = self.conversation_chain.predict(**model_input)
         
         # Log the raw (unfiltered) output of the model
         logger.info(f"Model Output (Turn {self.turn_count + 1}): {raw_response}")
